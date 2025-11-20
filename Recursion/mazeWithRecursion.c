@@ -97,7 +97,8 @@ int offset[4][2] = { {-1, 0}, {0, 1}, {1, 0}, {0, -1} };
 // }
 
 bool printPath(int x, int y, int px, int py){
-
+    if (x < 0 || y < 0 || x >= N || y >= N) return false;
+    if (maze[x][y] != PATH_COLOUR) return false;
 
     printf("(%d, %d)\n", x, y);
     if (x == N - 1 && y == N - 1) return true;
