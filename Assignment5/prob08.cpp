@@ -88,11 +88,6 @@ bool Po() {
         }
     }
     
-    // 시작 위치가 목표 위치인 경우
-    if (src.x == des.x && src.y == des.y) {
-        return true;
-    }
-    
     queue<Position> q;
     q.push(src);
     visited[src.x][src.y] = true;
