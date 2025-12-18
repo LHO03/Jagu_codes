@@ -1,242 +1,100 @@
 /*
  * ============================================================================
- * prob03.cpp - K개의 숫자를 제거하여 가장 큰 수 만들기
+ * prob03.cpp - 투 포인터(Two Pointer) 기반 합이 K인 쌍 개수 찾기
  * ============================================================================
  * 
  * [문제 개요]
- * - N자리 숫자 문자열에서 K개의 숫자를 제거
- * - 남은 숫자들의 순서를 유지하면서 가장 큰 수를 만듦
- * - 예: "1924" 에서 2개 제거 → "94" (9와 4를 남김)
- * 
- * [핵심 아이디어 - 그리디]
- * - 앞자리가 클수록 전체 수가 커짐
- * - 새 숫자가 스택 top보다 크면, top을 제거 (더 작은 수를 앞에 두면 손해)
- * - 제거 횟수가 K를 넘지 않도록 관리
+ * - 정렬된 배열에서 두 원소의 합이 K가 되는 쌍의 개수를 찾음
+ * - 같은 원소를 두 번 사용할 수 없음
  * 
  * [알고리즘]
- * - 스택을 이용한 그리디
- * - 각 숫자를 순회하며:
- *   1. 스택 top < 현재 숫자 && 아직 K개 미만 제거 → pop (제거)
- *   2. 현재 숫자를 push
- * - 최종 스택의 내용이 결과
+ * - 투 포인터(Two Pointer) 기법을 재귀적으로 구현
+ * - 배열이 정렬되어 있다는 점을 활용
+ * - 양 끝에서 시작하여 중앙으로 좁혀가며 탐색
  * 
- * [예시] N = "1924", K = 2
+ * [투 포인터 원리]
+ * - 정렬된 배열에서 두 포인터 start, end를 양 끝에 배치
+ * - sum = arr[start] + arr[end]
+ *   - sum == K: 쌍 발견! 양쪽 모두 이동
+ *   - sum < K: 합이 작으므로 start를 증가 (더 큰 값 선택)
+ *   - sum > K: 합이 크므로 end를 감소 (더 작은 값 선택)
  * 
- * '1': stack=[], push('1'), stack=['1']
- * '9': stack=['1'], '1' < '9' → pop, removed=1
- *      stack=[], push('9'), stack=['9']
- * '2': stack=['9'], '9' > '2' → push('2'), stack=['9','2']
- * '4': stack=['9','2'], '2' < '4' → pop, removed=2
- *      stack=['9'], '9' > '4' → push('4'), stack=['9','4']
+ * [시간 복잡도] O(N) - 각 원소를 최대 한 번씩만 방문
+ * [공간 복잡도] O(N) - 재귀 호출 스택 (반복문으로 O(1) 가능)
  * 
- * 결과: "94"
- * 
- * [시간 복잡도] O(N) - 각 숫자는 최대 한 번 push, 한 번 pop
- * [공간 복잡도] O(N) - 스택 및 결과 문자열
+ * [전제 조건]
+ * - 입력 배열이 오름차순으로 정렬되어 있어야 함
  */
 
 #include <iostream>
-#include <string>
-#include <stdexcept>
 using namespace std;
 
-const int MAX_SIZE = 1000000;   // 최대 입력 길이
+const int MAX = 1000;   // 배열 최대 크기
+int ignite[MAX];        // 정렬된 입력 배열
 
 /*
  * ============================================================================
- * Stack 클래스 - 문자를 저장하는 배열 기반 스택
- * ============================================================================
- * 
- * [용도]
- * - 결과 숫자를 구성할 문자들을 저장
- * - 그리디하게 큰 숫자가 앞에 오도록 관리
- * 
- * [특징]
- * - top_index: -1부터 시작 (비어있음 = -1)
- * - get_result(): 스택 내용을 문자열로 변환
- */
-class Stack {
-private:
-    char arr[MAX_SIZE];         // 숫자 문자 저장 배열
-    int top_index = -1;         // 스택 top의 인덱스 (-1: 비어있음)
-    int max_capacity;           // 스택 최대 용량 (toKeep = N - K)
-    
-public:
-    Stack() = default;
-    
-    /*
-     * 생성자 - 최대 용량 지정
-     * 매개변수: size - 유지할 숫자 개수 (N - K)
-     */
-    Stack(int size) : max_capacity(size) {}
-    
-    /*
-     * empty() - 스택이 비어있는지 확인
-     */
-    bool empty() { return top_index == -1; }
-    
-    /*
-     * full() - 스택이 가득 찼는지 확인
-     * 참고: 결과의 최대 길이(toKeep)에 도달했는지 확인
-     */
-    bool full() { return top_index == MAX_SIZE - 1; }
-
-    /*
-     * push(x) - 숫자 문자를 스택에 추가
-     */
-    void push(char x) {
-        if (full()) {
-            throw runtime_error("Full");
-        }
-        arr[++top_index] = x;
-    }
-
-    /*
-     * pop() - 스택에서 숫자 제거 (제거 카운트 증가와 함께 사용)
-     */
-    void pop() {
-        if (empty()) {
-            throw runtime_error("Empty");
-        }
-        top_index--;
-    }
-    
-    /*
-     * top() - 스택의 최상위 문자 반환
-     * 반환: 현재 결과의 마지막 숫자
-     */
-    char top() {
-        if (empty()) {
-            throw runtime_error("Empty");
-        }
-        return arr[top_index];
-    }
-
-    /*
-     * size() - 현재 스택 크기 반환
-     * 반환: 현재까지 선택된 숫자의 개수
-     */
-    int size() {
-        return top_index + 1;
-    }
-    
-    /*
-     * get_result() - 스택 내용을 문자열로 변환
-     * 반환: 스택의 bottom부터 top까지를 이어붙인 문자열
-     * 용도: 최종 결과 숫자 생성
-     */
-    string get_result() {
-        string result = "";
-        for (int i = 0; i <= top_index; i++) {
-            result += arr[i];
-        }
-        return result;
-    }
-};
-
-/*
- * ============================================================================
- * find_max_number() - K개 숫자를 제거하여 최대 수 생성
+ * two_someplace() - 재귀적 투 포인터로 합이 K인 쌍 개수 계산
  * ============================================================================
  * 
  * [매개변수]
- * - N: 숫자 문자열
- * - K: 제거할 숫자의 개수
+ * - start: 왼쪽 포인터 (배열의 시작 쪽)
+ * - end: 오른쪽 포인터 (배열의 끝 쪽)
+ * - K: 목표 합
  * 
  * [반환값]
- * - K개를 제거한 후 가장 큰 수 (문자열)
+ * - start~end 범위에서 합이 K가 되는 쌍의 개수
  * 
- * [알고리즘 상세]
+ * [동작 원리]
  * 
- * 1. 유효성 검사:
- *    - K >= n: 모든 숫자를 제거하면 결과가 없음
- *    - K < 0: 잘못된 입력
+ * 1. 종료 조건: start >= end
+ *    - 두 포인터가 만나거나 교차하면 탐색 종료
+ *    - 더 이상 쌍을 만들 수 없음
  * 
- * 2. 핵심 변수:
- *    - toKeep = n - K: 최종 결과의 자릿수
- *    - removed: 지금까지 제거한 숫자 개수
+ * 2. 경우 1: ignite[start] + ignite[end] == K
+ *    - 합이 정확히 K인 쌍 발견
+ *    - 1을 더하고, 양쪽 포인터 모두 이동
+ *    - start+1, end-1로 재귀 호출
  * 
- * 3. 각 숫자(current)를 순회하며:
- *    
- *    a. while 조건으로 제거 여부 결정:
- *       - !stack.empty(): 스택에 숫자가 있어야 비교 가능
- *       - stack.top() < current: top이 현재보다 작으면 제거 대상
- *       - removed < K: 아직 K개를 다 제거하지 않음
- *       - stack.size() + (n - i) > toKeep: 
- *         현재 스택 + 남은 숫자 > 필요한 개수
- *         → 제거해도 toKeep개를 채울 수 있음
- *    
- *    b. 조건 만족 시 pop() 후 removed++
- *    
- *    c. 스택이 가득 차지 않았으면 push(current)
- *       - 이미 가득 찼으면 현재 숫자 버림 (removed++)
+ * 3. 경우 2: ignite[start] + ignite[end] < K
+ *    - 합이 K보다 작음
+ *    - 더 큰 합이 필요하므로 start를 증가 (더 큰 값 선택)
+ *    - 배열이 정렬되어 있으므로 start++ 하면 합이 증가
  * 
- * [예시 트레이스] N = "4177252841", K = 4, toKeep = 6
+ * 4. 경우 3: ignite[start] + ignite[end] > K
+ *    - 합이 K보다 큼
+ *    - 더 작은 합이 필요하므로 end를 감소 (더 작은 값 선택)
+ *    - 배열이 정렬되어 있으므로 end-- 하면 합이 감소
  * 
- * i=0, '4': stack=[], push, stack=['4']
- * i=1, '1': '4' > '1', push, stack=['4','1']
- * i=2, '7': '1' < '7', pop(removed=1), '4' < '7', pop(removed=2)
- *           push, stack=['7']
- * i=3, '7': '7' == '7', push, stack=['7','7']
- * i=4, '2': '7' > '2', push, stack=['7','7','2']
- * i=5, '5': '2' < '5', pop(removed=3), '7' > '5', push, stack=['7','7','5']
- * i=6, '2': '5' > '2', push, stack=['7','7','5','2']
- * i=7, '8': '2' < '8', pop(removed=4), '5' < '8', size+remain=4+2=6 == toKeep
- *           더 이상 제거 불가, push, stack=['7','7','5','8']
- * i=8, '4': push, stack=['7','7','5','8','4']
- * i=9, '1': push, stack=['7','7','5','8','4','1'], size=6=toKeep
+ * [예시] 배열 = [1, 2, 3, 4, 5, 6], K = 7
  * 
- * 결과: "775841"
- * 
- * [그리디 정당성]
- * - 앞자리가 클수록 전체 수가 큼
- * - 작은 숫자를 앞에 두는 것은 항상 손해
- * - 따라서 뒤에 더 큰 숫자가 오면 앞의 작은 숫자를 제거하는 것이 최적
+ * - (1, 6): 1+6=7 ✓ → 쌍 발견, start++, end--
+ * - (2, 5): 2+5=7 ✓ → 쌍 발견, start++, end--
+ * - (3, 4): 3+4=7 ✓ → 쌍 발견, start++, end--
+ * - start >= end → 종료
+ * - 결과: 3쌍
  */
-string find_max_number(string N, int K) {
-    int n = N.length();
-    int toKeep = n - K;         // 유지해야 할 숫자 개수
+int two_someplace(int start, int end, int K){
+    // 기저 조건: 포인터가 만나거나 교차하면 종료
+    if (start >= end) return 0;
+
+    // 두 원소의 합 비교
+    if (ignite[start] + ignite[end] == K){
+        // 합이 K와 같음 → 쌍 발견
+        // 양쪽 포인터 모두 이동하여 다음 쌍 탐색
+        return 1 + two_someplace(start + 1, end - 1, K);   
+    } 
     
-    // 유효성 검사
-    if (K >= n) {
-        throw runtime_error("Cannot remove");
+    if (ignite[start] + ignite[end] < K){
+        // 합이 K보다 작음 → 더 큰 값이 필요
+        // start를 증가시켜 더 큰 원소 선택
+        return two_someplace(start + 1, end, K);
+    } 
+    else {
+        // 합이 K보다 큼 → 더 작은 값이 필요
+        // end를 감소시켜 더 작은 원소 선택
+        return two_someplace(start, end - 1, K);
     }
-    if (K < 0) {
-        throw runtime_error("K negative");
-    }
-    
-    Stack stack(toKeep);
-    int removed = 0;            // 제거한 숫자 개수
-    
-    for (int i = 0; i < n; i++) {
-        char current = N[i];
-        
-        // ================================================================
-        // 그리디 제거 로직
-        // ================================================================
-        // 스택 top이 현재 숫자보다 작고,
-        // 아직 K개 미만으로 제거했고,
-        // 제거해도 toKeep개를 채울 수 있으면 → 제거
-        while (!stack.empty() && stack.top() < current && removed < K && 
-               stack.size() + (n - i) > toKeep) {
-            stack.pop();
-            removed++;
-        }
-        
-        // ================================================================
-        // 현재 숫자 추가 또는 버림
-        // ================================================================
-        if (!stack.full()) {
-            // 스택에 공간이 있으면 추가
-            stack.push(current);
-        } else {
-            // 스택이 가득 찼으면 현재 숫자 버림
-            // (이 경우도 제거로 카운트)
-            removed++;
-        }
-    }
-    
-    return stack.get_result();
 }
 
 /*
@@ -244,31 +102,25 @@ string find_max_number(string N, int K) {
  * main() - 프로그램 진입점
  * ============================================================================
  * 
- * [입력]
- * - N: 숫자 문자열
- * - K: 제거할 숫자 개수
+ * [입력 형식]
+ * - 첫 줄: N (배열 크기)
+ * - 둘째 줄: N개의 정수 (오름차순 정렬되어 있어야 함)
+ * - 셋째 줄: K (목표 합)
  * 
  * [출력]
- * - 최대 수
+ * - 합이 K가 되는 쌍의 개수
  */
-int main() {
-    try {
-        string N;
-        int K;
-        
-        cin >> N >> K;
-        
-        if (N.empty()) {
-            throw runtime_error("N empty");
-        }
-
-        string result = find_max_number(N, K);
-        cout << result << endl;
-        
-    } catch (const runtime_error& e) {
-        cout << "Error: " << e.what() << endl;
-        return 1;
+int main(void){
+    int N, K;
+    
+    cin >> N;
+    for (int i = 0; i < N; i++){
+        cin >> ignite[i];
     }
+    cin >> K;
+    
+    // 배열 전체 범위(0 ~ N-1)에서 합이 K인 쌍 개수 출력
+    cout << two_someplace(0, N - 1, K);
     
     return 0;
 }
