@@ -44,7 +44,13 @@ bool in_range(int x, int y) {
     return x >= 0 && x < N && y >= 0 && y < N;
 }
 
+<<<<<<< HEAD
 // 주어진 위치 cur에서 dir 방향으로 포 규칙에 따라 이동 가능한 모든 착지 위치를 destinations 벡터에 저장
+=======
+// ============ 포 이동 가능 위치 계산 함수 ============
+// 주어진 위치 cur에서 dir 방향으로 포 규칙에 따라
+// 이동 가능한 모든 착지 위치를 destinations 벡터에 저장
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
 void can_moves(Position cur, int dir, vector<Position>& destinations) {
     int dx = offset[dir][0];
     int dy = offset[dir][1];
@@ -52,7 +58,12 @@ void can_moves(Position cur, int dir, vector<Position>& destinations) {
     int nx = cur.x + dx;
     int ny = cur.y + dy;
     
+<<<<<<< HEAD
     // 첫 번째 장애물(1)을 찾을 때까지 빈 칸을 지나감 포는 반드시 하나의 말을 건너뛰어야 이동 가능
+=======
+    // [1단계] 첫 번째 장애물(1)을 찾을 때까지 빈 칸을 지나감
+    // 포는 반드시 하나의 말을 건너뛰어야 이동 가능
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
     while (in_range(nx, ny) && pan[nx][ny] == SQUARE) {
         nx += dx;
         ny += dy;
@@ -63,18 +74,33 @@ void can_moves(Position cur, int dir, vector<Position>& destinations) {
         return;
     }
     
+<<<<<<< HEAD
     // 장애물을 건너뛴 후, 두 번째 장애물을 만나기 전까지의 모든 빈 칸이 착지 가능한 위치
+=======
+    // [2단계] 장애물을 건너뛴 후, 두 번째 장애물을 만나기 전까지의
+    // 모든 빈 칸이 착지 가능한 위치
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
     nx += dx;
     ny += dy;
     
     while (in_range(nx, ny) && pan[nx][ny] == SQUARE) {
+<<<<<<< HEAD
+=======
+        // 이 위치에 착지 가능
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
         destinations.push_back(Position(nx, ny));
         nx += dx;
         ny += dy;
     }
 }
 
+<<<<<<< HEAD
 bool Po() {
+=======
+// ============ BFS 탐색 함수 ============
+bool Po() {
+    // 방문 배열 초기화
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             visited[i][j] = false;
@@ -111,7 +137,12 @@ bool Po() {
             }
         }
     }
+<<<<<<< HEAD
 
+=======
+    
+    // 큐가 비었는데도 목표에 도달하지 못함
+>>>>>>> 85a29072973e4ca4632377bcd1931cb3c5bc818c
     return false;
 }
 
