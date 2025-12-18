@@ -174,10 +174,7 @@ string find_max_number(string N, int K) {
         // 조건 4번 설명: stack.size() + (n - i) > toKeep
         // - 현재 스택 크기 + 앞으로 올 숫자 개수 > 남길 개수
         // - 즉, pop해도 toKeep개를 채울 수 있다는 의미
-        while (!stack.empty() && 
-               stack.top() < current && 
-               removed < K && 
-               stack.size() + (n - i) > toKeep) {
+        while (!stack.empty() && stack.top() < current && removed < K && stack.size() + (n - i) > toKeep) {
             stack.pop();
             removed++;
         }
